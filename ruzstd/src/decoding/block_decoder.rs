@@ -79,7 +79,11 @@ impl BlockDecoder {
                 Ok(1)
             }
             BlockType::Raw => {
-                const BATCH_SIZE: usize = 128 * 1024;
+                // Reduced from 128*1024 to match RLE branch. The original 128KB buffer
+                // dominates the function's stack frame even when decoding Compressed blocks,
+                // because LLVM allocates the stack for the worst-case match arm. A smaller
+                // batch just means more loop iterations with no correctness impact.
+                const BATCH_SIZE: usize = 512;
                 let mut buf = [0u8; BATCH_SIZE];
                 let full_reads = header.decompressed_size / BATCH_SIZE as u32;
                 let single_read_size = header.decompressed_size % BATCH_SIZE as u32;
